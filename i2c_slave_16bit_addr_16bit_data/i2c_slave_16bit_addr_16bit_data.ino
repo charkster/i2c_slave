@@ -3,8 +3,7 @@ volatile uint8_t  address_upper;
 volatile uint8_t  address_lower;
 volatile uint16_t address;
 volatile uint16_t memory_map [65536]; // array is initialized all low values
-volatile uint8_t data_upper;
-volatile uint8_t data_lower;
+volatile uint16_t word_data;
 
 #define SLAVE_ID 0x3c
 
@@ -30,9 +29,9 @@ void receiveEvent(int bytes)
   address = (address_upper << 8) | address_lower;
   while (Wire1.available())
   {
-    data_upper = Wire1.read();
-    data_lower = Wire1.read();
-    memory_map[address++] = (data_upper << 8) | data_lower;
+    word_data = Wire1.read() << 8;
+    word_data = word_data | Wire1.read();
+    memory_map[address++] = word_data;
   }
 }
 
@@ -46,10 +45,8 @@ void requestEvent()
   }
   for (int i = 0; i < 32; i++) // this is needed for multibyte reads, up to 32 bytes
   {
-    data_upper = memory_map[address];
-    data_lower = memory_map[address++];
-    Wire1.write(data_upper);
-    Wire1.write(data_lower);
+    word_data = memory_map[address++];
+    Wire1.write((word_data >> 8) & 0xFF);
+    Wire1.write(word_data & 0xFF);
   }
 }
-
